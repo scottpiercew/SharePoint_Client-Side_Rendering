@@ -1,0 +1,180 @@
+<script src="../SiteAssets/jsLib/jquery.SPServices-2014.02.min.js" type="text/javascript"></script>
+<script src="../SiteAssets/jsLib/jquery.dataTables.min.js" type="text/javascript"></script>
+<script src="../SiteAssets/jsLib/sputility.min.js" type="text/javascript"></script>
+<script src="../SiteAssets/jsLib/jquery-ui.min.js" type="text/javascript"></script>
+<script src="../SiteAssets/sp_tableLists.js" type="text/javascript"></script>
+<script src="../SiteAssets/sp_tableFunc.js" type="text/javascript"></script>
+
+<link rel="stylesheet" type="text/css" href="../SiteAssets/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="../SiteAssets/css/pivot.min.css">
+
+<script type="text/javascript">
+  var nfrItem;
+  var finItem;
+  var itItem;
+  var capItem;
+  var lastDigitURL = window.location.href.slice(-1);
+
+  //This array of objects contains all the SharePoint list names and the GUID for each associated view
+  //To filter a SharePoint list by a view use the view GUID and NOT the view display name
+  //(If needed) Use below code to find SharePoint list views GUID and Names
+  // $().SPServices({
+  //   operation: "GetViewCollection",
+  //   async: false,
+  //   webURL: "[insert web URL]",
+  //   listName: "[insert list Name]",
+  //   completefunc: function (xData, Status) {
+  //     if (Status == "success") {
+  //       // console.log(xData);
+  //       $(xData.responseXML)
+  //         .find("View")
+  //         .each(function () {
+  //           $.each(this.attributes, function (i, attrib) {
+  //             var name = attrib.name;
+  //             var value = attrib.value;
+  //             console.log(attrib.name + " = " + attrib.value);
+  //           });
+  //         });
+  //     }
+  //   }
+  // });
+
+  var allTables = [
+    {
+      listName: "FIN Observation Table",
+      viewName: {
+        admin: "{7E4435CF-2C76-1AFE-B1B8-9C5CAE25184B}", //example GUID
+        component: "{326ED02C-1AFE-2C76-9EF3-9C5CAE25184B}"
+      }
+    },
+    {
+      listName: "IT Observation Table",
+      viewName: {
+        admin: "{1FA85CC7-1AFE-4CC2-2C76-9C5CAE25184B}",
+        component: "{5D404DDD-1AFE-2C76-9EF3-9C5CAE25184B}"
+      }
+    },
+    {
+      listName: "NFR Table",
+      viewName: {
+        admin: "{DFD0CEE3-9EF3-4F48-2C76-9C5CAE25184B}",
+        component: "{2837B633-1AFE-2C76-9E9A-9C5CAE25184B}"
+      }
+    },
+    {
+      listName: "CAP Table",
+      viewName: {
+        admin: "{C34CF77C-1AFE-9EF3-2C76-9C5CAE25184B}",
+        component: "{F88C016D-1AFE-4FD7-9EF3-9C5CAE25184B}"
+      }
+    }
+  ];
+
+  //Array of component assignments, '&amp;' in 'SPW PP&amp;E' is needed for CAMLQuery Syntax
+  //SPW Enterprise = SPW Data Management, SPW FbWT, SPW Reporting, SPW FISCAM, SPW PP&amp;E, SPW UoT
+  var groupAssignments = ["Admin Support", "PROG", "SPW-FOD", "SPW Data Management", "SPW FbWT", "SPW Reporting", "SPW FISCAM", "SPW PP&amp;E", "SPW UoT", "HIT", "NCR-MD", "TLE-Branch3", "TLE-Branch1", "TLE-Branch2", "SUDDL", "OSD", "SPW Enterprise"];
+
+  //Gets the current user's permission group
+  //If user in group "true", starts SPServices to get lists filtered by group
+  $().SPServices({
+    operation: "GetGroupCollectionFromUser",
+    userLoginName: $().SPServices.SPGetCurrentUser(),
+    completefunc: function (xData, Status) {
+      switch (true) {
+        case $(xData.responseXML).find("Group[Name='NFR CAP Observation Table Admin Group']").length == 1:
+          changeHeaderText("Admin Support Dashboard");
+          getListData(createArrObjAll("admin", groupAssignments[0]));
+          break;
+        case $(xData.responseXML).find("Group[Name='NFR CAP Observation Table SPW Enterprise Group']").length == 1:
+          changeHeaderText("Enterprise Group Dashboard");
+          getListData(createArrObjAll("component", groupAssignments[16]));
+          break;
+        case $(xData.responseXML).find("Group[Name='NFR CAP Observation Table PROG Group']").length == 1:
+          changeHeaderText("PROG Dashboard");
+          getListData(createArrObjAll("component", groupAssignments[1]));
+          break;
+        case $(xData.responseXML).find("Group[Name='NFR CAP Observation Table SPW-FOD Group']").length == 1:
+          changeHeaderText("SPW-FOD Dashboard");
+          getListData(createArrObjAll("component", groupAssignments[2]));
+          break;
+        case $(xData.responseXML).find("Group[Name='NFR CAP Observation Table HIT Group']").length == 1:
+          changeHeaderText("HIT Dashboard");
+          getListData(createArrObjAll("component", groupAssignments[10]));
+          break;
+        case $(xData.responseXML).find("Group[Name='NFR CAP Observation Table NCR-MD Group']").length == 1:
+          changeHeaderText("NCR-MD Dashboard");
+          getListData(createArrObjAll("component", groupAssignments[11]));
+          break;
+        case $(xData.responseXML).find("Group[Name='NFR CAP Observation Table TLE-Branch3 Group']").length == 1:
+          changeHeaderText("TLE-Branch3 Dashboard");
+          getListData(createArrObjAll("component", groupAssignments[12]));
+          break;
+        case $(xData.responseXML).find("Group[Name='NFR CAP Observation Table TLE-Branch1 Group']").length == 1:
+          changeHeaderText("TLE-Branch1 Dashboard");
+          getListData(createArrObjAll("component", groupAssignments[13]));
+          break;
+        case $(xData.responseXML).find("Group[Name='NFR CAP Observation Table TLE-Branch2 Group']").length == 1:
+          changeHeaderText("TLE-Branch2 Dashboard");
+          getListData(createArrObjAll("component", groupAssignments[14]));
+          break;
+        case $(xData.responseXML).find("Group[Name='NFR CAP Observation Table SUDDL Group']").length == 1:
+          changeHeaderText("SUDDL Dashboard");
+          getListData(createArrObjAll("component", groupAssignments[15]));
+          break;
+        default:
+          alert("Your account has not been granted permissions to access the Observation, NFR, CAP Tables. Please contact an Administrator.");
+      }
+    }
+  });
+
+</script>
+<div id="containerTable" style="display:none;">
+  <h1 id="groupNameHeader" style="padding-left:2vw">Dashboard</h1>
+  <br>
+  <div id="table-container">
+    <div id="tabs">
+      <ul>
+        <li>
+          <a href="#tabs-1">
+            <h2>FIN Observations</h2>
+          </a>
+        </li>
+        <li>
+          <a href="#tabs-2">
+            <h2>IT Observations</h2>
+          </a>
+        </li>
+        <li>
+          <a href="#tabs-3">
+            <h2>NFR Table</h2>
+          </a>
+        </li>
+        <li>
+          <a href="#tabs-4">
+            <h2>CAP Table</h2>
+          </a>
+        </li>
+      </ul>
+      <div id="tabs-1">
+        <button type="button" onclick="newFINobs()" class="tableBttns">Create New FIN Observation</button>
+        <button type="button" onclick="clearFilter(this)" name="0" class="tableBttns">View All</button>
+        <table id="finObsTable" class="display" width="100%" cellspacing="0"></table>
+      </div>
+      <div id="tabs-2">
+        <button type="button" onclick="newITobs()" class="tableBttns">Create New IT Observation</button>
+        <button type="button" onclick="clearFilter(this)" name="1" class="tableBttns">View All</button>
+        <table id="itObsTable" class="display" width="100%" cellspacing="0"></table>
+      </div>
+      <div id="tabs-3">
+        <button type="button" onclick="newNFR()" class="tableBttns">Create New NFR</button>
+        <button type="button" onclick="clearFilter(this)" name="2" class="tableBttns">View All</button>
+        <table id="nfrTable" class="display" width="100%" cellspacing="0"></table>
+      </div>
+      <div id="tabs-4">
+        <button type="button" onclick="newCAP()" class="tableBttns">Create New CAP</button>
+        <button type="button" onclick="clearFilter(this)" name="3" class="tableBttns">View All</button>
+        <table id="capTable" class="display" width="100%" cellspacing="0"></table>
+      </div>
+    </div>
+  </div>
+</div>
